@@ -8,9 +8,6 @@ inputs:
   terraform_directory:
     description: "Diretório do Terraform"
     required: true
-  pr_number:
-    description: "Número da PR"
-    required: true
   aws_region:
     description: "Região da AWS"
     required: true
@@ -67,8 +64,8 @@ runs:
       with:
         github_token: ${{ inputs.github_token }}
         workflow: plan.yaml
-        pr: ${{ inputs.pr_id }}
-        name: ${{ inputs.pr_id }}-tf-plan
+        pr: ${{ inputs.pr_number }}
+        name: ${{ inputs.pr_number }}-tf-plan
         path: ${{ inputs.terraform_directory }}
 
     - name: Terraform Apply

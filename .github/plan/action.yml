@@ -23,6 +23,9 @@ inputs:
   aws_session_token:
     description: "Token de sessão da AWS"
     required: true
+  github_token:
+    description: "Token de acesso ao GitHub"
+    required: true
 
 runs:
   using: composite
@@ -69,7 +72,7 @@ runs:
       id: comment
       uses: actions/github-script@v4
       with:
-        #github-token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ inputs.github_token }}
         script: |
           github.issues.createComment({
             issue_number: ${{ inputs.pr_number }},

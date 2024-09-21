@@ -1,19 +1,18 @@
 name: Terraform Apply
 
 on:
-  pull_request_review:
-    types: [submitted]
+  push:
+    branches:
+      - main
 
 env:
   aws_region: us-east-1
   terraform_version: 1.6.5
   terraform_directory: ./
-  pr_number: ${{ github.event.pull_request.number }}
 
 jobs:
-  terraform_plan:
+  terraform_apply:
     runs-on: ubuntu-latest
-    if: github.event.review.state == 'approved'
     steps:
       - uses: actions/checkout@v3
 

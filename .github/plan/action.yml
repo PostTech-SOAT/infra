@@ -63,7 +63,7 @@ runs:
       working-directory: ${{ inputs.terraform_directory }}
       shell: bash
       run: |
-        terraform plan -no-color -out=tfplan --var-file=deploy.tfvars
+        terraform plan -no-color -out=tfplan --var-file="tfvars/deploy.tfvars"
 
     # - name: Comment PR
     #   id: Comentário da PR

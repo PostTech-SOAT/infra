@@ -18,9 +18,25 @@ jobs:
 
       - name: Find PR associated with the commit
         id: find_pr
-        uses: peter-evans/find-pull-request@v3
+        uses: actions/github-script@v4
         with:
-          commit: ${{ github.sha }}
+          script: |
+            const pr = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'closed',
+              sort: 'updated',
+              direction: 'desc',
+              per_page: 1
+            });
+
+            const associatedPR = pr.data.find(p => p.merge_commit_sha === context.sha);
+
+            if (associatedPR) {
+              core.setOutput('pr_number', associatedPR.number);
+            } else {
+              throw new Error("No PR found for this commit.");
+            }
 
       - name: Debug PR
         run: "echo 'PR Number: ${{ steps.find_pr.outputs.number }}'"

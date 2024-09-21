@@ -16,11 +16,21 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Find PR associated with the commit
+        id: find_pr
+        uses: peter-evans/find-pull-request@v3
+        with:
+          commit: ${{ github.sha }}
+
+      - name: Debug PR
+        run: "echo 'PR Number: ${{ steps.find_pr.outputs.number }}'"
+
       - name: Terraform Apply
         uses: ./.github/apply
         with:
           terraform_version: ${{ env.terraform_version }}
           terraform_directory: ${{ env.terraform_directory }}
+          pr_number: ${{ steps.find_pr.outputs.number }}
           aws_region: ${{ env.aws_region }}
           aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

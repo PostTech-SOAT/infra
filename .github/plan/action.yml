@@ -32,7 +32,7 @@ runs:
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v2
       with:
-        terraform_version: ${{ inputs.terraforom_version }}
+        terraform_version: ${{ inputs.terraform_version }}
         terraform_wrapper: false
 
     - name: Terraform Init
@@ -54,7 +54,7 @@ runs:
       working-directory: ${{ inputs.terraform_directory }}
       shell: bash
       run: |
-        terraform plan -out=tfplan
+        terraform plan -no-color -out=tfplan
 
     # - name: Comment PR
     #   id: Comentário da PR

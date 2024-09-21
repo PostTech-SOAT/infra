@@ -24,7 +24,7 @@ inputs:
     description: "Token de sessão da AWS"
     required: true
   github_token:
-    description: "Token de acesso ao GitHub"
+    description: "Token de acesso ao GitHub para usar API"
     required: true
 
 runs:

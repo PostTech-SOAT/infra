@@ -1,4 +1,4 @@
-name: "CI - Infra Base"
+name: "CD - Infra Base"
 description: "Validar plano de subida para deploy de insfraestrutura base"
 inputs:
   terraform_version:
@@ -61,19 +61,24 @@ runs:
       run: |
         terraform validate
 
-    - name: Terraform Plan
-      id: plan
+    - name: Download Plan
+      id: download-plan
+      uses: dawidd6/action-download-artifact@v2
+      with:
+        github_token: ${{ inputs.github_token }}
+        workflow: plan.yaml
+        pr: ${{ inputs.pr_id }}
+        name: ${{ inputs.pr_id }}-tf-plan
+        path: ${{ inputs.terraform_directory }}
+
+    - name: Terraform Apply
+      id: apply
       working-directory: ${{ inputs.terraform_directory }}
       shell: bash
       run: |
-        terraform plan -no-color -out=tfplan --var-file="tfvars/deploy.tfvars"
-
-    - name: Upload Plan
-      id: upload-plan
-      uses: actions/upload-artifact@v3
-      with:
-        name: ${{ inputs.pr_id }}-tf-plan
-        path: ${{ inputs.terraform_directory }}/tfplan
+        echo 'apply<<EOF' >> $GITHUB_OUTPUT
+        terraform apply -input=false -no-color --var-file="tfvars/deploy.tfvars" tfplan >> $GITHUB_OUTPUT
+        echo 'EOF' >> $GITHUB_OUTPUT
 
     - name: Comment PR
       id: comment
@@ -86,11 +91,9 @@ runs:
             owner: context.repo.owner,
             repo: context.repo.repo,
             body: |
-              Terraform Plan:
+              Terraform Apply:
 
               ```
-              ${{ steps.plan.outputs.plan }}
+              ${{ steps.apply.outputs.apply }}
               ```
-
-              Plan saved to GH artifacts.
           })

@@ -85,12 +85,13 @@ runs:
             issue_number: ${{ inputs.pr_number }},
             owner: context.repo.owner,
             repo: context.repo.repo,
-            body: |
+            body: `
               Terraform Plan:
 
-              ```
+              \`\`\`
               ${{ steps.plan.outputs.plan }}
-              ```
+              \`\`\`
 
-              Plan saved to GH artifacts.
+              Plan salvo no GitHub Artifacts.
+            `
           })

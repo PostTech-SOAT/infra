@@ -23,6 +23,9 @@ inputs:
   github_token:
     description: "Token de acesso ao GitHub para usar API"
     required: true
+  pr_number:
+    description: "Número da PR"
+    required: true
 
 runs:
   using: composite

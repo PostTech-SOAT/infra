@@ -80,21 +80,21 @@ runs:
         terraform apply -input=false -no-color --var-file="tfvars/deploy.tfvars" tfplan >> $GITHUB_OUTPUT
         echo 'EOF' >> $GITHUB_OUTPUT
 
-    - name: Comment PR
-      id: comment
-      uses: actions/github-script@v4
-      with:
-        github-token: ${{ inputs.github_token }}
-        script: |
-          github.issues.createComment({
-            issue_number: ${{ inputs.pr_number }},
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: `
-              Terraform Apply:
+    # - name: Comment PR
+    #   id: comment
+    #   uses: actions/github-script@v4
+    #   with:
+    #     github-token: ${{ inputs.github_token }}
+    #     script: |
+    #       github.issues.createComment({
+    #         issue_number: ${{ inputs.pr_number }},
+    #         owner: context.repo.owner,
+    #         repo: context.repo.repo,
+    #         body: `
+    #           Terraform Apply:
 
-              \`\`\`
-              ${{ steps.apply.outputs.apply }}
-              \`\`\`
-            `
-          })
+    #           \`\`\`
+    #           ${{ steps.apply.outputs.apply }}
+    #           \`\`\`
+    #         `
+    #       })

@@ -1,0 +1,20 @@
+name: Terraform Plan
+
+on:
+  pull_request:
+
+env:
+  aws_region: us-east-1
+  terraform_version: 1.6.5
+  terraform_directory: ./
+  pr_number: ${{ github.event.number }}
+
+jobs:
+  terraform_plan:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == false
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Terraform Plan
+        uses: ./.github/plan

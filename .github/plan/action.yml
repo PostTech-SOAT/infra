@@ -14,6 +14,15 @@ inputs:
   aws_region:
     description: "Região da AWS"
     required: true
+  aws_access_key_id:
+    description: "ID da chave de acesso da AWS"
+    required: true
+  aws_secret_access_key:
+    description: "Chave de acesso secreta da AWS"
+    required: true
+  aws_session_token:
+    description: "Token de sessão da AWS"
+    required: true
 
 runs:
   using: composite
@@ -24,9 +33,9 @@ runs:
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+        aws-access-key-id: ${{ inputs.aws_access_key_id }}
+        aws-secret-access-key: ${{ inputs.aws_secret_access_key }}
+        aws-session-token: ${{ inputs.aws_session_token }}
         aws-region: ${{ inputs.aws_region }}
 
     - name: Setup Terraform

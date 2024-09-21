@@ -18,3 +18,11 @@ jobs:
 
       - name: Terraform Plan
         uses: ./.github/plan
+        with:
+          terraform_version: ${{ env.terraform_version }}
+          terraform_directory: ${{ env.terraform_directory }}
+          pr_number: ${{ env.pr_number }}
+          aws_region: ${{ env.aws_region }}
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_session_token: ${{ secrets.AWS_SESSION_TOKEN }}

@@ -66,7 +66,9 @@ runs:
       working-directory: ${{ inputs.terraform_directory }}
       shell: bash
       run: |
-        terraform plan -no-color -out=tfplan --var-file="tfvars/deploy.tfvars"
+        echo 'plan<<EOF' >> $GITHUB_OUTPUT
+        terraform plan -no-color -out=tfplan --var-file="tfvars/deploy.tfvars" >> $GITHUB_OUTPUT
+        echo 'EOF' >> $GITHUB_OUTPUT
 
     - name: Upload Plan
       id: upload-plan

@@ -11,7 +11,7 @@ env:
   terraform_version: 1.6.5
   terraform_directory: ./
   terragrunt_version: 0.67.10
-  tfvars_file_name: deploy.tfvars
+  tfvars_file_name: deploy.hcl
   # pr_number: ${{ github.event.pull_request.number }}
 
 jobs:

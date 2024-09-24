@@ -56,7 +56,8 @@ runs:
     - name: Setup Terragrunt
       uses: gruntwork-io/terragrunt-action@v2
       with:
-        version: ${{ inputs.terragrunt_version }}
+        tg_version: ${{ inputs.terragrunt_version }}
+        tf_version: ${{ inputs.terraform_version }}
 
     - name: Terraform Init
       id: init

@@ -69,13 +69,6 @@ runs:
       run: |
         terragrunt init --terragrunt-non-interactive --terragrunt-config ./terragrunt/${{ inputs.tfvars_file_name }}
 
-    - name: Terraform Validate
-      id: validate
-      working-directory: ${{ inputs.terraform_directory }}
-      shell: bash
-      run: |
-        terragrunt validate --terragrunt-non-interactive --terragrunt-config ./terragrunt/${{ inputs.tfvars_file_name }}
-
     # - name: Download Plan
     #   id: download-plan
     #   uses: dawidd6/action-download-artifact@v2

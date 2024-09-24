@@ -54,15 +54,13 @@ runs:
         terraform_wrapper: false
 
     - name: Setup Terragrunt
-      id: setup-terragrunt
       shell: bash
       run: |
         tg_version="${{ inputs.terragrunt_version }}"
-        tf_version="${{ inputs.terraform_version }}"
         echo "Setting up Terragrunt with version $tg_version"
-        curl -L -o terragrunt https://github.com/gruntwork-io/terragrunt/releases/download/v${tg_version}/terragrunt_linux_amd64
-        chmod +x terragrunt
-        mv terragrunt /usr/local/bin/
+        curl -L -o terragrunt_linux_amd64 https://github.com/gruntwork-io/terragrunt/releases/download/v${tg_version}/terragrunt_linux_amd64
+        chmod +x terragrunt_linux_amd64
+        mv terragrunt_linux_amd64 /usr/local/bin/terragrunt
 
     - name: Terraform Init
       id: init

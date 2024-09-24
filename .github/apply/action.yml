@@ -61,15 +61,15 @@ runs:
       run: |
         terraform validate
 
-    - name: Download Plan
-      id: download-plan
-      uses: dawidd6/action-download-artifact@v2
-      with:
-        github_token: ${{ inputs.github_token }}
-        workflow: plan.yaml
-        pr: ${{ inputs.pr_number }}
-        name: ${{ inputs.pr_number }}-tf-plan
-        path: ${{ inputs.terraform_directory }}
+    # - name: Download Plan
+    #   id: download-plan
+    #   uses: dawidd6/action-download-artifact@v2
+    #   with:
+    #     github_token: ${{ inputs.github_token }}
+    #     workflow: plan.yaml
+    #     pr: ${{ inputs.pr_number }}
+    #     name: ${{ inputs.pr_number }}-tf-plan
+    #     path: ${{ inputs.terraform_directory }}
 
     - name: Terraform Apply
       id: apply
@@ -77,7 +77,7 @@ runs:
       shell: bash
       run: |
         echo 'apply<<EOF' >> $GITHUB_OUTPUT
-        terraform apply -input=false -no-color --var-file="tfvars/deploy.tfvars" tfplan >> $GITHUB_OUTPUT
+        terraform apply -no-color --var-file="tfvars/deploy.tfvars" --auto-approve >> $GITHUB_OUTPUT
         echo 'EOF' >> $GITHUB_OUTPUT
 
     # - name: Comment PR

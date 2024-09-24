@@ -31,3 +31,22 @@ private_zone = {
     availability_zone = "c"
   }
 }
+
+##############################################################################
+#                      KUBERNETES                                            #
+##############################################################################
+
+auto_scale_options = {
+  min     = 2
+  max     = 3
+  desired = 2
+}
+cluster_name          = "hexburger-eks-cluster"
+cluster_role_arn      = "arn:aws:iam::596886466046:role/LabRole"
+cluster_version       = "1.29"
+nodes_instances_sizes = ["t3.micro"]
+
+##############################################################################
+#                      NGINX                                                 #
+##############################################################################
+ingress_nginx_name = "ingress-nginx"

@@ -33,3 +33,10 @@ variable "private_zone" {
     availability_zone = string
   }))
 }
+
+variable "cluster_name" {}
+variable "cluster_role_arn" {}
+variable "cluster_version" {}
+variable "nodes_instances_sizes" {}
+variable "auto_scale_options" {}
+variable "ingress_nginx_name" {}

@@ -5,6 +5,12 @@ inputs:
     description: "Versão do Terraform"
     required: true
     default: "1.6.5"
+  terragrunt_version:
+    description: "Versão do Terragrunt"
+    required: true
+  tfvars_file_name:
+    description: "Nome do arquivo de variáveis"
+    required: true
   terraform_directory:
     description: "Diretório do Terraform"
     required: true
@@ -47,19 +53,24 @@ runs:
         terraform_version: ${{ inputs.terraform_version }}
         terraform_wrapper: false
 
+    - name: Setup Terragrunt
+      uses: gruntwork-io/terragrunt-action@v2
+      with:
+        version: ${{ inputs.terragrunt_version }}
+
     - name: Terraform Init
       id: init
       working-directory: ${{ inputs.terraform_directory }}
       shell: bash
       run: |
-        terraform init
+        terragrunt init --terragrunt-non-interactive --terragrunt-config ./terragrunt/${{ inputs.tfvars_file_name }}
 
     - name: Terraform Validate
       id: validate
       working-directory: ${{ inputs.terraform_directory }}
       shell: bash
       run: |
-        terraform validate
+        terragrunt validate --terragrunt-non-interactive --terragrunt-config ./terragrunt/${{ inputs.tfvars_file_name }}
 
     - name: Terraform Plan
       id: plan
@@ -67,7 +78,7 @@ runs:
       shell: bash
       run: |
         echo 'plan<<EOF' >> $GITHUB_OUTPUT
-        terraform plan -no-color -out=tfplan --var-file="tfvars/deploy.tfvars" >> $GITHUB_OUTPUT
+        terragrunt plan --terragrunt-non-interactive --terragrunt-config ./terragrunt/${{ inputs.tfvars_file_name }} >> $GITHUB_OUTPUT
         echo 'EOF' >> $GITHUB_OUTPUT
 
     - name: Upload Plan

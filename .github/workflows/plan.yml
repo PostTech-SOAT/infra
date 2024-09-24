@@ -7,6 +7,8 @@ env:
   aws_region: us-east-1
   terraform_version: 1.6.5
   terraform_directory: ./
+  terragrunt_version: 0.67.10
+  tfvars_file_name: deploy.tfvars
   pr_number: ${{ github.event.number }}
 
 jobs:

@@ -1,3 +1,7 @@
+locals {
+  data_lambda_authorizer = data.aws_lambda_function.admin
+}
+
 module "network" {
   source = "./modules/network"
 
@@ -45,9 +49,17 @@ module "api_gateway" {
   source = "./modules/api-gateway"
 
   application                        = var.application
+  aws_account_id                     = var.aws_account_id
   api_gateway_configuration          = var.api_gateway_configuration
   api_gateway_vpc_endpoint_ids       = null
   api_gateway_endpoint_configuration = var.api_gateway_endpoint_configuration
   loadbalancer_uri                   = data.kubernetes_service.ingress_nginx.status.0.load_balancer.0.ingress.0.hostname
-  lambda_uri                         = ""
+  lambda_uri                         = data.aws_lambda_function.criar_cliente.invoke_arn
+  lambda_authorizer_config           = {
+    name           = "${local.data_lambda_authorizer.function_name}"
+    authorizer_uri = "${local.data_lambda_authorizer.invoke_arn}"
+  }
+
+  depends_on = [module.nginx]
+
 }

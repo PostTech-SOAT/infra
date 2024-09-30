@@ -1,5 +1,15 @@
 locals {
   api_name = "api-${var.application}-${var.api_gateway_configuration.api_type}"
+
+  method_configuration = flatten([
+    for api_conf in var.api_gateway_endpoint_configuration : [
+      for method_conf in api_conf.method_endpoint_configuration : {
+        path_part   = api_conf.path_part
+        http_method = method_conf.http_method
+        config      = method_conf
+      }
+    ]
+  ])
 }
 
 resource "aws_api_gateway_rest_api" "api" {
@@ -26,69 +36,87 @@ resource "aws_api_gateway_stage" "deploy_stage" {
 }
 
 resource "aws_api_gateway_resource" "create_resource" {
-  for_each = { for idx, config in var.api_gateway_endpoint_configuration : idx => config }
+  for_each = { for config in var.api_gateway_endpoint_configuration : config.path_part => config }
 
   path_part   = each.value.path_part
   parent_id   = aws_api_gateway_rest_api.api.root_resource_id
   rest_api_id = aws_api_gateway_rest_api.api.id
-
 }
 
 resource "aws_api_gateway_method" "method_request" {
-  for_each = { for idx, config in var.api_gateway_endpoint_configuration : idx => config }
+  for_each = {
+    for idx, config in local.method_configuration :
+    "${config.path_part}_${config.http_method}" => config
+  }
 
   rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_resource.create_resource[each.key].id
+  resource_id   = aws_api_gateway_resource.create_resource[each.value.path_part].id
   http_method   = each.value.http_method
-  authorization = each.value.authorization
+  authorization = each.value.config.authorization
 
   request_parameters = {
-    "method.request.path.proxy" = each.value.is_method_path_proxy ? true : null
+    "method.request.path.proxy" = each.value.config.is_method_path_proxy ? true : null
   }
+
+  depends_on = [ aws_api_gateway_resource.create_resource ]
 }
 
 resource "aws_api_gateway_integration" "integration_request" {
-  for_each = { for idx, config in var.api_gateway_endpoint_configuration : idx => config }
+  for_each = {
+    for idx, config in local.method_configuration :
+    "${config.path_part}_${config.http_method}" => config
+  }
 
   rest_api_id             = aws_api_gateway_rest_api.api.id
-  resource_id             = aws_api_gateway_resource.create_resource[each.key].id
+  resource_id             = aws_api_gateway_method.method_request[each.key].resource_id
   http_method             = aws_api_gateway_method.method_request[each.key].http_method
-  integration_http_method = each.value.integration_http_method
-  type                    = each.value.integration_type
-  uri                     = each.value.is_lambda_trigger ? var.lambda_uri : each.value.is_ecs_endpoint ? "http://${var.loadbalancer_uri}:${each.value.port}/{proxy}" : ""
-  passthrough_behavior    = each.value.passthrough_behavior
+  integration_http_method = each.value.config.integration_http_method
+  type                    = each.value.config.integration_type
+  uri                     = each.value.config.is_lambda_trigger ? var.lambda_uri : each.value.config.is_ecs_endpoint ? "http://${var.loadbalancer_uri}/${each.value.config.app_endpoint_path}" : ""
+  passthrough_behavior    = each.value.config.passthrough_behavior
 
   request_parameters = {
-    "integration.request.path.proxy"                                                     = each.value.path_part == "{proxy+}" ? "method.request.path.proxy" : null,
-    (each.value.is_async_call ? "integration.request.header.X-Amz-Invocation-Type" : "") = (each.value.is_async_call ? "'Event'" : null)
-
+    "integration.request.path.proxy" = each.value.config.is_method_path_proxy ? "method.request.path.proxy" : null,
+    (each.value.config.is_async_call ? "integration.request.header.X-Amz-Invocation-Type" : "") = (each.value.config.is_async_call ? "'Event'" : null)
   }
+
+  depends_on = [aws_api_gateway_method.method_request, aws_api_gateway_resource.create_resource]
 }
 
 resource "aws_api_gateway_integration_response" "integration_response_200" {
-  for_each = { for idx, config in var.api_gateway_endpoint_configuration : idx => config if !config.is_method_path_proxy }
+  for_each = { 
+    for idx, config in local.method_configuration :
+    "${config.path_part}_${config.http_method}" => config if !lookup(config, "is_method_path_proxy", false)
+  }
 
   rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_resource.create_resource[each.key].id
+  resource_id = aws_api_gateway_resource.create_resource[each.value.path_part].id
   http_method = aws_api_gateway_method.method_request[each.key].http_method
   status_code = aws_api_gateway_method_response.response_200[each.key].status_code
 
   response_templates = {
     "application/json" = ""
   }
+
+  depends_on = [aws_api_gateway_method.method_request, aws_api_gateway_resource.create_resource]
 }
 
 resource "aws_api_gateway_method_response" "response_200" {
-  for_each = { for idx, config in var.api_gateway_endpoint_configuration : idx => config }
+  for_each = {
+    for idx, config in local.method_configuration :
+    "${config.path_part}_${config.http_method}" => config
+  }
 
   rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_resource.create_resource[each.key].id
+  resource_id = aws_api_gateway_resource.create_resource[each.value.path_part].id
   http_method = aws_api_gateway_method.method_request[each.key].http_method
   status_code = "200"
 
   response_models = {
     "application/json" = "Empty"
   }
+
+  depends_on = [aws_api_gateway_method.method_request, aws_api_gateway_resource.create_resource]
 }
 
 resource "aws_api_gateway_deployment" "deploy_api" {
@@ -96,29 +124,22 @@ resource "aws_api_gateway_deployment" "deploy_api" {
   rest_api_id = aws_api_gateway_rest_api.api.id
 
   triggers = {
-    redeployment = sha1(jsonencode([
-      aws_api_gateway_rest_api.api.body,
-      aws_api_gateway_integration.integration_request
-    ]))
+    redeployment = sha1(jsonencode([aws_api_gateway_rest_api.api.body, aws_api_gateway_integration.integration_request]))
   }
 
   lifecycle {
     create_before_destroy = true
   }
 
-  depends_on = [aws_api_gateway_integration.integration_request]
-}
-
-resource "aws_iam_role_policy_attachment" "lambda_basic" {
-  for_each = { for idx, config in var.api_gateway_endpoint_configuration : idx => config if config.is_lambda_trigger }
-
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-  role       = "${each.value.lambda_name}-role"
-
+  depends_on = [
+    aws_api_gateway_method.method_request,
+    aws_api_gateway_integration.integration_request,
+    aws_api_gateway_resource.create_resource
+  ]
 }
 
 resource "aws_lambda_permission" "apigw_lambda" {
-  for_each = { for idx, config in var.api_gateway_endpoint_configuration : idx => config if config.is_lambda_trigger }
+  for_each = { for idx, config in var.api_gateway_endpoint_configuration : idx => config if lookup(config, "is_lambda_trigger", false) }
 
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
@@ -127,4 +148,13 @@ resource "aws_lambda_permission" "apigw_lambda" {
   source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/${each.value.http_method}/${each.value.path_part}"
 
   depends_on = [aws_api_gateway_integration.integration_request]
+}
+
+resource "aws_api_gateway_authorizer" "this" {
+  count = var.api_gateway_configuration.is_there_authorizer ? 1 : 0
+
+  name                   = var.lambda_authorizer_config.name
+  rest_api_id            = aws_api_gateway_rest_api.api.id
+  authorizer_uri         = var.lambda_authorizer_config.authorizer_uri
+  authorizer_credentials = "arn:aws:iam::${var.aws_account_id}:role/LabRole"
 }

@@ -23,6 +23,10 @@ resource "aws_eks_node_group" "cluster" {
   }
 
   depends_on = [aws_eks_cluster.hexburger_eks_cluster, aws_launch_template.eks_node_launch_template]
+
+  lifecycle {
+    ignore_changes = [ launch_template ]
+  }
 }
 
 resource "aws_launch_template" "eks_node_launch_template" {

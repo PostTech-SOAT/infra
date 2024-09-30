@@ -1,6 +1,6 @@
 resource "aws_eks_cluster" "hexburger_eks_cluster" {
   name     = var.cluster_name
-  role_arn = var.cluster_role_arn
+  role_arn = "arn:aws:iam::${var.aws_account_id}:role/LabRole"
   version  = var.cluster_version
 
   vpc_config {
@@ -8,7 +8,7 @@ resource "aws_eks_cluster" "hexburger_eks_cluster" {
   }
 
   tags = {
-    Name = var.cluster_name
+    Name                                        = var.cluster_name
     "kubernetes.io/cluster/${var.cluster_name}" = "shared"
   }
 }
@@ -21,3 +21,12 @@ resource "kubernetes_namespace" "namespace" {
     name = "api"
   }
 }
+
+# resource "aws_eks_addon" "addons" {
+#   for_each          = { for addon in var.eks_addons : addon.name => addon }
+#   cluster_name      = aws_eks_cluster.hexburger_eks_cluster.name
+#   addon_name        = each.value.name
+#   addon_version     = each.value.version
+#   resolve_conflicts = "OVERWRITE"
+
+# }

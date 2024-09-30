@@ -34,9 +34,38 @@ variable "private_zone" {
   }))
 }
 
-variable "cluster_name" {}
-variable "cluster_role_arn" {}
-variable "cluster_version" {}
-variable "nodes_instances_sizes" {}
-variable "auto_scale_options" {}
-variable "ingress_nginx_name" {}
+variable "cluster_name" {
+  description = "Nome do cluster EKS"
+  type        = string
+}
+variable "aws_account_id" {
+  description = "ID da conta AWS"
+  type        = string
+}
+variable "cluster_version" {
+  description = "Versão do cluster EKS"
+  type        = string
+}
+variable "nodes_instances_sizes" {
+  description = "Tipo das instancias dos nodes do EKS"
+  type        = list(string)
+}
+variable "auto_scale_options" {
+  description = "Configurações de auto scaling do cluster EKS"
+  type        = map(number)
+}
+variable "ingress_nginx_name" {
+  description = "Nome do ingress controller NGINX"
+  type        = string
+}
+variable "eks_addons" {
+  description = "Addons do EKS"
+  type = list(object({
+    name    = string
+    version = string
+  }))
+
+}
+variable "api_gateway_configuration" {}
+variable "api_gateway_endpoint_configuration" {}
+variable "ingress_nginx_service" {}

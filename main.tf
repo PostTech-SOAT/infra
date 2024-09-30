@@ -17,19 +17,37 @@ module "kubernetes" {
   private_subnet_ids    = module.network.private_subnet_ids
   auto_scale_options    = var.auto_scale_options
   cluster_name          = var.cluster_name
-  cluster_role_arn      = var.cluster_role_arn
+  aws_account_id        = var.aws_account_id
   cluster_version       = var.cluster_version
   nodes_instances_sizes = var.nodes_instances_sizes
+  eks_addons            = var.eks_addons
+
+  depends_on = [module.network]
 }
 
 module "container" {
   source = "./modules/container"
 
   application = var.application
+
+  depends_on = [module.network]
 }
 
 module "nginx" {
   source = "./modules/nginx"
 
   ingress_nginx_name = var.ingress_nginx_name
+
+  depends_on = [module.kubernetes, module.network]
+}
+
+module "api_gateway" {
+  source = "./modules/api-gateway"
+
+  application                        = var.application
+  api_gateway_configuration          = var.api_gateway_configuration
+  api_gateway_vpc_endpoint_ids       = null
+  api_gateway_endpoint_configuration = var.api_gateway_endpoint_configuration
+  loadbalancer_uri                   = data.kubernetes_service.ingress_nginx.status.0.load_balancer.0.ingress.0.hostname
+  lambda_uri                         = ""
 }

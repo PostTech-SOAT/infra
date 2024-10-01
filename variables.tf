@@ -66,6 +66,18 @@ variable "eks_addons" {
   }))
 
 }
-variable "api_gateway_configuration" {}
+variable "api_gateway_configuration" {
+  description = "Configurações do API Gateway"
+  type = object({
+    api_type          = string
+    api_endpoint_type = list(string)
+    api_key_source    = string
+    disable_execute_api_endpoint = bool
+    api_gateway_policy = string
+    deploy_api_stage_name = string
+
+  })
+}
 variable "api_gateway_endpoint_configuration" {}
 variable "ingress_nginx_service" {}
+variable "authorization_config" {}

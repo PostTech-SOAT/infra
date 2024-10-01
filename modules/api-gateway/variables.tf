@@ -6,3 +6,4 @@ variable "lambda_uri" {}
 variable "loadbalancer_uri" {}
 variable "lambda_authorizer_config" {}
 variable "aws_account_id" {}
+variable "authorization_config" {}

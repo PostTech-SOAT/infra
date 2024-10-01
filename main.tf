@@ -59,7 +59,8 @@ module "api_gateway" {
     name           = "${local.data_lambda_authorizer.function_name}"
     authorizer_uri = "${local.data_lambda_authorizer.invoke_arn}"
   }
-
+  authorization_config               = var.authorization_config
+  
   depends_on = [module.nginx]
 
 }

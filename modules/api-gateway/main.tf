@@ -62,13 +62,16 @@ resource "aws_api_gateway_method" "method_request" {
   resource_id   = each.value.is_there_path_parent ? aws_api_gateway_resource.parent_resource[each.value.path_part].id : aws_api_gateway_resource.create_resource[each.value.path_part].id
   http_method   = each.value.http_method
   authorization = each.value.config.authorization
-  authorizer_id = each.value.config.authorization == "CUSTOM" ? aws_api_gateway_authorizer.this[each.key].id : null
+  authorizer_id = each.value.config.is_there_authorization ? aws_api_gateway_authorizer.this[each.value.config.authorization_name].id : null
 
   request_parameters = {
     "method.request.path.proxy" = each.value.config.is_method_path_proxy ? true : null
   }
 
-  depends_on = [ aws_api_gateway_resource.create_resource ]
+  depends_on = [ 
+    aws_api_gateway_resource.create_resource,
+    aws_api_gateway_authorizer.this
+  ]
 }
 
 resource "aws_api_gateway_integration" "integration_request" {
@@ -149,25 +152,29 @@ resource "aws_api_gateway_deployment" "deploy_api" {
 }
 
 resource "aws_lambda_permission" "apigw_lambda" {
+  for_each = {
+    for idx, config in local.method_configuration :
+    "${config.path_part}_${config.http_method}" => config if local.method_configuration[idx].config.is_lambda_trigger
+  }
+
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
-  function_name = "CriarClienteCognito"
+  function_name = each.value.config.lambda_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/POST/criar-cliente"
+  source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/${each.value.config.http_method}/${each.value.path_part}"
 
   depends_on = [aws_api_gateway_integration.integration_request]
 }
 
 resource "aws_api_gateway_authorizer" "this" {
-  for_each = {
-    for idx, config in local.method_configuration :
-    "${config.path_part}_${config.http_method}" => config if local.method_configuration[idx].config.is_there_authorization
+ for_each = {
+    for conf in var.authorization_config : conf.authorization_name => conf
   }
 
-  name                   = each.value.config.authorization_name
+  name                   = each.value.authorization_name
   rest_api_id            = aws_api_gateway_rest_api.api.id
-  authorizer_uri         = "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:${var.aws_account_id}:function:${each.value.config.authorization_name}/invocations"
-  type                   = "REQUEST"
-  identity_source        = "method.request.querystring.cpf"
+  authorizer_uri         = "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:${var.aws_account_id}:function:${each.value.authorization_name}/invocations"
+  type                   = each.value.authorization_type
+  identity_source        = each.value.identity_source
   authorizer_credentials = "arn:aws:iam::${var.aws_account_id}:role/LabRole"
 }

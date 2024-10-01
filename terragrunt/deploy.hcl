@@ -26,7 +26,8 @@ terraform {
     ]
 
     required_var_files = [
-      "./tfvars/deploy.tfvars"
+      "./tfvars/deploy.tfvars",
+      "./tfvars/endpoint_config.tfvars"
     ]
   }
 }

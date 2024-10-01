@@ -32,6 +32,9 @@ inputs:
   pr_number:
     description: "Número da PR"
     required: true
+  eks_cluster_name:
+    description: "Nome do cluster EKS"
+    required: true
 
 runs:
   using: composite
@@ -61,6 +64,11 @@ runs:
         curl -L -o terragrunt_linux_amd64 https://github.com/gruntwork-io/terragrunt/releases/download/v${tg_version}/terragrunt_linux_amd64
         chmod +x terragrunt_linux_amd64
         mv terragrunt_linux_amd64 /usr/local/bin/terragrunt
+
+    - name: Setup EKS environment
+      shell: bash
+      run: |
+        aws eks --region ${{ inputs.aws_region }} update-kubeconfig --name ${{ inputs.eks_cluster_name }}
 
     - name: Terraform Init
       id: init

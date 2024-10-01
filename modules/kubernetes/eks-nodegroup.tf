@@ -1,7 +1,7 @@
 resource "aws_eks_node_group" "cluster" {
   cluster_name    = aws_eks_cluster.hexburger_eks_cluster.name
   node_group_name = format("%s-node-group", var.cluster_name)
-  node_role_arn   = var.cluster_role_arn
+  node_role_arn   = "arn:aws:iam::${var.aws_account_id}:role/LabRole"
   subnet_ids      = var.private_subnet_ids
   instance_types  = var.nodes_instances_sizes
 
@@ -16,10 +16,16 @@ resource "aws_eks_node_group" "cluster" {
     version = "$Latest"
   }
 
-  capacity_type = "SPOT"
+  capacity_type = "ON_DEMAND"
 
   tags = {
     "kubernetes.io/cluster/${var.cluster_name}" = "owned"
+  }
+
+  depends_on = [aws_eks_cluster.hexburger_eks_cluster, aws_launch_template.eks_node_launch_template]
+
+  lifecycle {
+    ignore_changes = [ launch_template ]
   }
 }
 

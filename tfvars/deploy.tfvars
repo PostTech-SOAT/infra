@@ -42,11 +42,46 @@ auto_scale_options = {
   desired = 2
 }
 cluster_name          = "hexburger-eks-cluster"
-cluster_role_arn      = "arn:aws:iam::596886466046:role/LabRole"
-cluster_version       = "1.29"
-nodes_instances_sizes = ["t3.micro"]
+aws_account_id        = "169299837592"
+cluster_version       = "1.30"
+nodes_instances_sizes = ["t3.medium"]
+
+eks_addons = [
+  {
+    name    = "aws-ebs-csi-driver"
+    version = "v1.30.0-eksbuild.1"
+  }
+]
 
 ##############################################################################
 #                      NGINX                                                 #
 ##############################################################################
 ingress_nginx_name = "ingress-nginx"
+
+
+##############################################################################
+#                      API GATEWAY                                           #
+##############################################################################
+ingress_nginx_service = "ingress-nginx-controller"
+
+api_gateway_configuration = {
+  api_type                       = "public"
+  api_endpoint_type              = ["edge"]
+  api_key_source                 = null
+  disable_execute_api_endpoint   = false
+  api_gateway_policy             = null
+  deploy_api_stage_name          = "deploy"
+  is_there_authorizer            = true
+}
+
+authorization_config = [{
+  is_there_authorizer = true
+  authorization_name  = "BuscarClienteCognito"
+  authorization_type  = "REQUEST"
+  identity_source     = "method.request.querystring.cpf"
+},{
+  is_there_authorizer = true
+  authorization_name  = "BuscarAdminCognito"
+  authorization_type  = "REQUEST"
+  identity_source     = "method.request.querystring.cpf"
+}]

@@ -4,9 +4,10 @@ locals {
   method_configuration = flatten([
     for api_conf in var.api_gateway_endpoint_configuration : [
       for method_conf in api_conf.method_endpoint_configuration : {
-        path_part   = api_conf.path_part
-        http_method = method_conf.http_method
-        config      = method_conf
+        path_part            = api_conf.path_part
+        is_there_path_parent = api_conf.is_there_path_parent
+        http_method          = method_conf.http_method
+        config               = method_conf
       }
     ]
   ])
@@ -36,10 +37,18 @@ resource "aws_api_gateway_stage" "deploy_stage" {
 }
 
 resource "aws_api_gateway_resource" "create_resource" {
-  for_each = { for config in var.api_gateway_endpoint_configuration : config.path_part => config }
+  for_each = { for config in var.api_gateway_endpoint_configuration : config.path_part => config if !config.is_there_path_parent }
 
   path_part   = each.value.path_part
   parent_id   = aws_api_gateway_rest_api.api.root_resource_id
+  rest_api_id = aws_api_gateway_rest_api.api.id
+}
+
+resource "aws_api_gateway_resource" "parent_resource" {
+  for_each = { for config in var.api_gateway_endpoint_configuration : config.path_part => config if config.is_there_path_parent }
+
+  path_part   = each.value.child_path
+  parent_id   = aws_api_gateway_resource.create_resource[each.value.path_parent].id
   rest_api_id = aws_api_gateway_rest_api.api.id
 }
 
@@ -50,9 +59,10 @@ resource "aws_api_gateway_method" "method_request" {
   }
 
   rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_resource.create_resource[each.value.path_part].id
+  resource_id   = each.value.is_there_path_parent ? aws_api_gateway_resource.parent_resource[each.value.path_part].id : aws_api_gateway_resource.create_resource[each.value.path_part].id
   http_method   = each.value.http_method
   authorization = each.value.config.authorization
+  authorizer_id = each.value.config.authorization == "CUSTOM" ? aws_api_gateway_authorizer.this[each.key].id : null
 
   request_parameters = {
     "method.request.path.proxy" = each.value.config.is_method_path_proxy ? true : null
@@ -90,7 +100,7 @@ resource "aws_api_gateway_integration_response" "integration_response_200" {
   }
 
   rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_resource.create_resource[each.value.path_part].id
+  resource_id = each.value.is_there_path_parent ? aws_api_gateway_resource.parent_resource[each.value.path_part].id : aws_api_gateway_resource.create_resource[each.value.path_part].id
   http_method = aws_api_gateway_method.method_request[each.key].http_method
   status_code = aws_api_gateway_method_response.response_200[each.key].status_code
 
@@ -108,7 +118,7 @@ resource "aws_api_gateway_method_response" "response_200" {
   }
 
   rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_resource.create_resource[each.value.path_part].id
+  resource_id = each.value.is_there_path_parent ? aws_api_gateway_resource.parent_resource[each.value.path_part].id : aws_api_gateway_resource.create_resource[each.value.path_part].id
   http_method = aws_api_gateway_method.method_request[each.key].http_method
   status_code = "200"
 
@@ -139,22 +149,25 @@ resource "aws_api_gateway_deployment" "deploy_api" {
 }
 
 resource "aws_lambda_permission" "apigw_lambda" {
-  for_each = { for idx, config in var.api_gateway_endpoint_configuration : idx => config if lookup(config, "is_lambda_trigger", false) }
-
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
-  function_name = each.value.lambda_name
+  function_name = "CriarClienteCognito"
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/${each.value.http_method}/${each.value.path_part}"
+  source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/POST/criar-cliente"
 
   depends_on = [aws_api_gateway_integration.integration_request]
 }
 
 resource "aws_api_gateway_authorizer" "this" {
-  count = var.api_gateway_configuration.is_there_authorizer ? 1 : 0
+  for_each = {
+    for idx, config in local.method_configuration :
+    "${config.path_part}_${config.http_method}" => config if local.method_configuration[idx].config.is_there_authorization
+  }
 
-  name                   = var.lambda_authorizer_config.name
+  name                   = each.value.config.authorization_name
   rest_api_id            = aws_api_gateway_rest_api.api.id
-  authorizer_uri         = var.lambda_authorizer_config.authorizer_uri
+  authorizer_uri         = "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:${var.aws_account_id}:function:${each.value.config.authorization_name}/invocations"
+  type                   = "REQUEST"
+  identity_source        = "method.request.querystring.cpf"
   authorizer_credentials = "arn:aws:iam::${var.aws_account_id}:role/LabRole"
 }

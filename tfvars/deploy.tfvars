@@ -42,14 +42,14 @@ auto_scale_options = {
   desired = 2
 }
 cluster_name          = "hexburger-eks-cluster"
-aws_account_id        = "169299837592"
+aws_account_id        = "212602060786"
 cluster_version       = "1.30"
 nodes_instances_sizes = ["t3.medium"]
 
 eks_addons = [
   {
     name    = "aws-ebs-csi-driver"
-    version = "v1.30.0-eksbuild.1"
+    version = "v1.37.0-eksbuild.1"
   }
 ]
 
@@ -65,13 +65,13 @@ ingress_nginx_name = "ingress-nginx"
 ingress_nginx_service = "ingress-nginx-controller"
 
 api_gateway_configuration = {
-  api_type                       = "public"
-  api_endpoint_type              = ["edge"]
-  api_key_source                 = null
-  disable_execute_api_endpoint   = false
-  api_gateway_policy             = null
-  deploy_api_stage_name          = "deploy"
-  is_there_authorizer            = true
+  api_type                     = "public"
+  api_endpoint_type            = ["edge"]
+  api_key_source               = null
+  disable_execute_api_endpoint = false
+  api_gateway_policy           = null
+  deploy_api_stage_name        = "deploy"
+  is_there_authorizer          = true
 }
 
 authorization_config = [{
@@ -79,7 +79,7 @@ authorization_config = [{
   authorization_name  = "BuscarClienteCognito"
   authorization_type  = "REQUEST"
   identity_source     = "method.request.querystring.cpf"
-},{
+  }, {
   is_there_authorizer = true
   authorization_name  = "BuscarAdminCognito"
   authorization_type  = "REQUEST"

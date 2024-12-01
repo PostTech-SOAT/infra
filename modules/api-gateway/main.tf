@@ -65,10 +65,11 @@ resource "aws_api_gateway_method" "method_request" {
   authorizer_id = each.value.config.is_there_authorization ? aws_api_gateway_authorizer.this[each.value.config.authorization_name].id : null
 
   request_parameters = {
-    "method.request.path.proxy" = each.value.config.is_method_path_proxy ? true : null
+    "method.request.path.${each.value.config.proxy_path}" = each.value.config.is_method_path_proxy ? true : null
+
   }
 
-  depends_on = [ 
+  depends_on = [
     aws_api_gateway_resource.create_resource,
     aws_api_gateway_authorizer.this
   ]
@@ -89,7 +90,7 @@ resource "aws_api_gateway_integration" "integration_request" {
   passthrough_behavior    = each.value.config.passthrough_behavior
 
   request_parameters = {
-    "integration.request.path.proxy" = each.value.config.is_method_path_proxy ? "method.request.path.proxy" : null,
+    "integration.request.path.${each.value.config.proxy_path}"                                  = each.value.config.is_method_path_proxy ? "method.request.path.${each.value.config.proxy_path}" : null,
     (each.value.config.is_async_call ? "integration.request.header.X-Amz-Invocation-Type" : "") = (each.value.config.is_async_call ? "'Event'" : null)
   }
 
@@ -97,7 +98,7 @@ resource "aws_api_gateway_integration" "integration_request" {
 }
 
 resource "aws_api_gateway_integration_response" "integration_response_200" {
-  for_each = { 
+  for_each = {
     for idx, config in local.method_configuration :
     "${config.path_part}_${config.http_method}" => config if !lookup(config, "is_method_path_proxy", false)
   }
@@ -167,7 +168,7 @@ resource "aws_lambda_permission" "apigw_lambda" {
 }
 
 resource "aws_api_gateway_authorizer" "this" {
- for_each = {
+  for_each = {
     for conf in var.authorization_config : conf.authorization_name => conf
   }
 
